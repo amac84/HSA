@@ -91,6 +91,16 @@ export default async function DashboardPage() {
           </table>
         </div>
       </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold">Need policy details?</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Review eligible expenses, deadlines, reimbursement timelines, and claim template requirements.
+        </p>
+        <Link className="mt-3 inline-block text-sm font-medium text-blue-700 hover:underline" href="/policy">
+          View HSA policy
+        </Link>
+      </section>
     </div>
   );
 }

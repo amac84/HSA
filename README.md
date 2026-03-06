@@ -17,6 +17,7 @@ Internal web portal for End in Mind Inc. to manage HSA claims with secure Clerk 
 - Employee/executive dashboard with allocation, approved total, and remaining balance
 - Claim submission with multi-document upload (local secure storage for MVP)
 - Claim history and claim detail with denial reason visibility
+- Employee-accessible in-app HSA policy page with process and claim template
 - Admin claims queue with filters and sorting
 - Admin claim review (approve/deny + denial reason + internal notes)
 - Admin user management:

@@ -30,6 +30,9 @@ export function PortalShell({ user, children }: PortalShellProps) {
               <Link href="/claims/new" className="hover:text-blue-700">
                 Submit claim
               </Link>
+              <Link href="/policy" className="hover:text-blue-700">
+                Policy
+              </Link>
               {adminNav && (
                 <>
                   <Link href="/admin" className="hover:text-blue-700">
