@@ -71,6 +71,13 @@ export default async function ClaimDetailPage({
           <p>{claim.description}</p>
         </div>
 
+        {claim.userNotes && (
+          <div className="mt-4">
+            <h2 className="text-sm text-slate-500">Your notes</h2>
+            <p>{claim.userNotes}</p>
+          </div>
+        )}
+
         {claim.status === "DENIED" && claim.denialReason && (
           <div className="mt-4 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
             <p className="font-semibold">Denial reason</p>

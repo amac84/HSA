@@ -56,7 +56,7 @@ describe("POST /api/claims", () => {
     form.set("category", "DENTAL");
     form.set("description", "Dental cleaning");
     form.set("amount", "230.40");
-    form.set("notes", "");
+    form.set("notes", "Please include this in annual dental tally");
     form.set("documents", new File(["receipt"], "receipt.pdf", { type: "application/pdf" }));
 
     mockCreateClaimForUser.mockResolvedValue({
@@ -67,6 +67,12 @@ describe("POST /api/claims", () => {
     const response = await POST(new Request("http://localhost/api/claims", { method: "POST", body: form }));
 
     expect(mockCreateClaimForUser).toHaveBeenCalledTimes(1);
+    expect(mockCreateClaimForUser).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        notes: "Please include this in annual dental tally",
+      }),
+    );
     expect(response.headers.get("location")).toContain("/claims/claim_123");
   });
 

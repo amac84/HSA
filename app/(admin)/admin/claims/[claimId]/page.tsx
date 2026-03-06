@@ -117,6 +117,20 @@ export default async function AdminClaimReviewPage({
           <p className="text-sm text-slate-500">Description</p>
           <p>{claim.description}</p>
         </div>
+
+        {claim.userNotes && (
+          <div className="mt-4">
+            <p className="text-sm text-slate-500">Claimant notes</p>
+            <p>{claim.userNotes}</p>
+          </div>
+        )}
+
+        {claim.adminNotes && (
+          <div className="mt-4">
+            <p className="text-sm text-slate-500">Internal notes</p>
+            <p>{claim.adminNotes}</p>
+          </div>
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6">

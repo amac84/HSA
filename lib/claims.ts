@@ -40,9 +40,9 @@ export async function createClaimForUser(user: User, input: NewClaimInput) {
       providerName: input.providerName,
       category: input.category,
       description: input.description,
+      userNotes: input.notes || null,
       amount: input.amount,
       status: ClaimStatus.PENDING,
-      adminNotes: input.notes || null,
       planYear: PLAN_YEAR,
     },
   });

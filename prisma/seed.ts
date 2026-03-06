@@ -90,6 +90,7 @@ async function main() {
       submittedAt: new Date("2026-02-11"),
       decidedAt: new Date("2026-02-13"),
       decidedByUserId: admin.id,
+      userNotes: "Submitted with complete receipt and insurance coordination details.",
       adminNotes: "Eligible under plan rules.",
     },
   });
@@ -105,6 +106,7 @@ async function main() {
       status: ClaimStatus.PENDING,
       planYear: 2026,
       submittedAt: new Date("2026-02-17"),
+      userNotes: "Prescription for seasonal allergy treatment.",
     },
   });
 
@@ -121,6 +123,7 @@ async function main() {
       submittedAt: new Date("2026-01-22"),
       decidedAt: new Date("2026-01-24"),
       decidedByUserId: admin.id,
+      userNotes: "Submitting optometry and frames receipt.",
       denialReason: "Receipt did not include provider details.",
       adminNotes: "Please resubmit with detailed receipt.",
     },
