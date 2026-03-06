@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  EXECUTIVE
+  ADMIN
+}
+
+enum BenefitClass {
+  EMPLOYEE
+  EXECUTIVE
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum ExpenseCategory {
+  MEDICAL_SERVICES
+  DENTAL
+  VISION
+  PRESCRIPTIONS
+  PARAMEDICAL
+  MEMBERSHIP
+  OTHER
+}
+
+enum ClaimDocumentType {
+  RECEIPT
+  SUPPORTING_DOCUMENT
+}
+
+model User {
+  id               String      @id @default(cuid())
+  clerkUserId      String?     @unique
+  email            String      @unique
+  fullName         String
+  role             Role        @default(EMPLOYEE)
+  benefitClass     BenefitClass @default(EMPLOYEE)
+  annualAllocation Decimal     @db.Decimal(12, 2)
+  isActive         Boolean     @default(true)
+  claims           Claim[]
+  decisions        Claim[]     @relation("ClaimDecisions")
+  approvedUsersCreated ApprovedUser[] @relation("ApprovedUserCreatedBy")
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model ApprovedUser {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  fullName        String?
+  role            Role?    @default(EMPLOYEE)
+  benefitClass    BenefitClass? @default(EMPLOYEE)
+  annualAllocation Decimal? @db.Decimal(12, 2)
+  isActive        Boolean  @default(true)
+  createdByUserId String?
+  createdByUser   User?    @relation("ApprovedUserCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Claim {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenseDate     DateTime
+  providerName    String
+  category        ExpenseCategory
+  description     String
+  amount          Decimal         @db.Decimal(12, 2)
+  status          ClaimStatus     @default(PENDING)
+  denialReason    String?
+  adminNotes      String?
+  planYear        Int
+  submittedAt     DateTime        @default(now())
+  decidedAt       DateTime?
+  decidedByUserId String?
+  decidedByUser   User?           @relation("ClaimDecisions", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  documents       ClaimDocument[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId, submittedAt])
+  @@index([status, submittedAt])
+}
+
+model ClaimDocument {
+  id             String            @id @default(cuid())
+  claimId        String
+  claim          Claim             @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fileName       String
+  filePath       String
+  fileType       String
+  documentType   ClaimDocumentType
+  uploadedAt     DateTime          @default(now())
+}
+
+model AuditLog {
+  id                String   @id @default(cuid())
+  entityType        String
+  entityId          String
+  action            String
+  performedByUserId String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([performedByUserId, createdAt])
+}
