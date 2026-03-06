@@ -31,12 +31,13 @@ export default async function ClaimsHistoryPage() {
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Decision date</th>
+              <th className="px-4 py-3">Denial reason</th>
             </tr>
           </thead>
           <tbody>
             {claims.length === 0 && (
               <tr>
-                <td className="px-4 py-4 text-slate-500" colSpan={6}>
+                <td className="px-4 py-4 text-slate-500" colSpan={7}>
                   No claims yet.
                 </td>
               </tr>
@@ -55,6 +56,7 @@ export default async function ClaimsHistoryPage() {
                   <StatusBadge status={claim.status} />
                 </td>
                 <td className="px-4 py-3">{claim.decidedAt?.toLocaleDateString() ?? "—"}</td>
+                <td className="px-4 py-3">{claim.denialReason ?? "—"}</td>
               </tr>
             ))}
           </tbody>
