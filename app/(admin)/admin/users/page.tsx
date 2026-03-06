@@ -1,7 +1,9 @@
 import { BenefitClass, Role } from "@prisma/client";
 
 import { requirePageAdmin } from "@/lib/auth/authorization";
+import { PLAN_YEAR } from "@/lib/config";
 import { prisma } from "@/lib/db";
+import { formatCurrency } from "@/lib/format";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -21,6 +23,21 @@ export default async function AdminUsersPage({
       orderBy: { email: "asc" },
     }),
   ]);
+
+  const approvedTotalsByUser = await prisma.claim.groupBy({
+    by: ["userId"],
+    where: {
+      status: "APPROVED",
+      planYear: PLAN_YEAR,
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+
+  const approvedMap = new Map(
+    approvedTotalsByUser.map((item) => [item.userId, Number(item._sum.amount ?? 0)]),
+  );
 
   return (
     <div className="space-y-6">
@@ -114,49 +131,62 @@ export default async function AdminUsersPage({
               <th className="px-4 py-3">Class</th>
               <th className="px-4 py-3">Allocation</th>
               <th className="px-4 py-3">Active</th>
+              <th className="px-4 py-3">Approved total ({PLAN_YEAR})</th>
+              <th className="px-4 py-3">Remaining ({PLAN_YEAR})</th>
               <th className="px-4 py-3">Update</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr className="border-t border-slate-100" key={user.id}>
-                <td className="px-4 py-3">{user.fullName}</td>
-                <td className="px-4 py-3">{user.email}</td>
-                <td className="px-4 py-3" colSpan={5}>
-                  <form action={`/api/admin/users/${user.id}`} className="grid gap-2 md:grid-cols-5" method="post">
-                    <select className="rounded-md border border-slate-300 px-2 py-1.5" defaultValue={user.role} name="role">
-                      {Object.values(Role).map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                    <select className="rounded-md border border-slate-300 px-2 py-1.5" defaultValue={user.benefitClass} name="benefitClass">
-                      {Object.values(BenefitClass).map((benefitClass) => (
-                        <option key={benefitClass} value={benefitClass}>
-                          {benefitClass}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className="rounded-md border border-slate-300 px-2 py-1.5"
-                      defaultValue={Number(user.annualAllocation)}
-                      min="1"
-                      name="annualAllocation"
-                      step="0.01"
-                      type="number"
-                    />
-                    <select className="rounded-md border border-slate-300 px-2 py-1.5" defaultValue={String(user.isActive)} name="isActive">
-                      <option value="true">Active</option>
-                      <option value="false">Inactive</option>
-                    </select>
-                    <button className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-100" type="submit">
-                      Save
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))}
+            {users.map((user) => {
+              const approvedTotal = approvedMap.get(user.id) ?? 0;
+              const remaining = Math.max(0, Number(user.annualAllocation) - approvedTotal);
+
+              return (
+                <tr className="border-t border-slate-100" key={user.id}>
+                  <td className="px-4 py-3">{user.fullName}</td>
+                  <td className="px-4 py-3">{user.email}</td>
+                  <td className="px-4 py-3">{user.role}</td>
+                  <td className="px-4 py-3">{user.benefitClass}</td>
+                  <td className="px-4 py-3">{formatCurrency(Number(user.annualAllocation))}</td>
+                  <td className="px-4 py-3">{user.isActive ? "Active" : "Inactive"}</td>
+                  <td className="px-4 py-3">{formatCurrency(approvedTotal)}</td>
+                  <td className="px-4 py-3">{formatCurrency(remaining)}</td>
+                  <td className="px-4 py-3">
+                    <form action={`/api/admin/users/${user.id}`} className="grid gap-2 md:grid-cols-5" method="post">
+                      <select className="rounded-md border border-slate-300 px-2 py-1.5" defaultValue={user.role} name="role">
+                        {Object.values(Role).map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </select>
+                      <select className="rounded-md border border-slate-300 px-2 py-1.5" defaultValue={user.benefitClass} name="benefitClass">
+                        {Object.values(BenefitClass).map((benefitClass) => (
+                          <option key={benefitClass} value={benefitClass}>
+                            {benefitClass}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        className="rounded-md border border-slate-300 px-2 py-1.5"
+                        defaultValue={Number(user.annualAllocation)}
+                        min="1"
+                        name="annualAllocation"
+                        step="0.01"
+                        type="number"
+                      />
+                      <select className="rounded-md border border-slate-300 px-2 py-1.5" defaultValue={String(user.isActive)} name="isActive">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                      <button className="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-100" type="submit">
+                        Save
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
