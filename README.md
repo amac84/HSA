@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# End in Mind HSA Portal (MVP)
 
-## Getting Started
+Internal web portal for End in Mind Inc. to manage HSA claims with secure Clerk authentication, role-based access control, claim submission/review workflows, annual balance tracking, and audit logging.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript + Tailwind
+- Clerk authentication (Microsoft login configured in Clerk dashboard)
+- Prisma + PostgreSQL
+- Server-side authorization checks for all sensitive operations
+
+## Core capabilities implemented
+
+- Microsoft-based sign-in via Clerk
+- Strict approved-user allowlist gate
+- Bootstrap admin via environment variable (`BOOTSTRAP_ADMIN_EMAILS`)
+- Employee/executive dashboard with allocation, approved total, and remaining balance
+- Claim submission with multi-document upload (local secure storage for MVP)
+- Claim history and claim detail with denial reason visibility
+- Admin claims queue with filters and sorting
+- Admin claim review (approve/deny + denial reason + internal notes)
+- Admin user management:
+  - manage approved-user allowlist
+  - role/class/allocation updates
+  - activate/deactivate users
+- CSV export endpoint for claim records
+- Audit logs for key actions
+
+## Environment variables
+
+Copy `.env.example` to `.env.local` and populate:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hsa_portal"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+BOOTSTRAP_ADMIN_EMAILS="admin@your-company.com"
+PLAN_YEAR="2026"
+```
+
+## Clerk configuration notes
+
+1. In Clerk dashboard, enable **Microsoft** as the sign-in provider.
+2. Disable other sign-in providers for production.
+3. Configure redirect URLs to include:
+   - `http://localhost:3000/sign-in`
+   - your production domain equivalent.
+
+## Local setup
+
+```bash
+npm install
+cp .env.example .env.local
+```
+
+### Database setup
+
+```bash
+# generate Prisma client
+npm run prisma:generate
+
+# create and apply migrations (requires PostgreSQL running)
+npm run db:migrate
+
+# seed sample data
+npm run db:seed
+```
+
+### Run app
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` – start dev server
+- `npm run build` – production build
+- `npm run lint` – ESLint
+- `npm run typecheck` – TypeScript type-check
+- `npm run test` – Vitest tests
+- `npm run prisma:generate` – generate Prisma client
+- `npm run db:migrate` – apply migrations
+- `npm run db:seed` – seed development data
 
-## Learn More
+## Security & privacy notes
 
-To learn more about Next.js, take a look at the following resources:
+- Application routes are auth-protected.
+- Role and data access checks are enforced server-side.
+- Claim documents are stored outside public assets and fetched through authorized API route checks.
+- CSV export intentionally excludes sensitive free-text medical/internal notes by default.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data model highlights
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `User`: role, benefit class, annual allocation, active flag
+- `ApprovedUser`: strict allowlist for access provisioning
+- `Claim`: status lifecycle and decision metadata
+- `ClaimDocument`: uploaded file metadata + storage path
+- `AuditLog`: key mutation events for governance/audit trail
