@@ -2,8 +2,18 @@ import { NextResponse } from "next/server";
 
 import { requireApiUser, ApiAuthorizationError } from "@/lib/auth/authorization";
 import { createClaimForUser } from "@/lib/claims";
-import { MAX_CLAIM_DOCUMENTS } from "@/lib/config";
+import {
+  ALLOWED_DOCUMENT_EXTENSIONS,
+  ALLOWED_DOCUMENT_MIME_TYPES,
+  MAX_CLAIM_DOCUMENTS,
+  MAX_DOCUMENT_SIZE_BYTES,
+} from "@/lib/config";
 import { claimFormSchema } from "@/lib/validation/claim";
+
+function getExtension(fileName: string) {
+  const segments = fileName.toLowerCase().split(".");
+  return segments.length > 1 ? segments.at(-1) ?? "" : "";
+}
 
 export async function POST(request: Request) {
   try {
@@ -22,6 +32,30 @@ export async function POST(request: Request) {
     if (files.length > MAX_CLAIM_DOCUMENTS) {
       return NextResponse.redirect(
         new URL(`/claims/new?error=Maximum ${MAX_CLAIM_DOCUMENTS} documents allowed.`, request.url),
+      );
+    }
+
+    const invalidFile = files.find((file) => {
+      const extension = getExtension(file.name);
+      const supportedMimeType = file.type ? ALLOWED_DOCUMENT_MIME_TYPES.has(file.type.toLowerCase()) : false;
+      const supportedExtension = ALLOWED_DOCUMENT_EXTENSIONS.has(extension);
+
+      return !supportedMimeType && !supportedExtension;
+    });
+
+    if (invalidFile) {
+      return NextResponse.redirect(
+        new URL(`/claims/new?error=Unsupported file type for ${invalidFile.name}.`, request.url),
+      );
+    }
+
+    const oversizedFile = files.find((file) => file.size > MAX_DOCUMENT_SIZE_BYTES);
+    if (oversizedFile) {
+      return NextResponse.redirect(
+        new URL(
+          `/claims/new?error=File ${oversizedFile.name} exceeds 10MB limit.`,
+          request.url,
+        ),
       );
     }
 

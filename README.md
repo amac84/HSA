@@ -91,6 +91,7 @@ Open `http://localhost:3000`.
 - Application routes are auth-protected.
 - Role and data access checks are enforced server-side.
 - Claim documents are stored outside public assets and fetched through authorized API route checks.
+- Upload validation enforces allowed document types and max 10MB per file.
 - CSV export intentionally excludes sensitive free-text medical/internal notes by default.
 
 ## Data model highlights

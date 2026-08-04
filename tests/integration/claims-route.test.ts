@@ -93,4 +93,20 @@ describe("POST /api/claims", () => {
     expect(response.status).toBe(403);
     expect(payload).toEqual({ error: "Forbidden" });
   });
+
+  it("rejects unsupported document types", async () => {
+    const form = new FormData();
+    form.set("expenseDate", "2026-03-06");
+    form.set("providerName", "Clinic D");
+    form.set("category", "VISION");
+    form.set("description", "Vision exam");
+    form.set("amount", "80");
+    form.set("documents", new File(["binary"], "malware.exe", { type: "application/x-msdownload" }));
+
+    const response = await POST(new Request("http://localhost/api/claims", { method: "POST", body: form }));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toContain("/claims/new?error=Unsupported%20file%20type");
+    expect(mockCreateClaimForUser).not.toHaveBeenCalled();
+  });
 });

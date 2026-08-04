@@ -18,7 +18,8 @@ export default async function NewClaimPage({
     <div className="max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold">Submit a new claim</h1>
       <p className="text-sm text-slate-600">
-        Upload at least one receipt. You can add up to {MAX_CLAIM_DOCUMENTS} files total.
+        Upload at least one receipt. You can add up to {MAX_CLAIM_DOCUMENTS} files total. Supported types:
+        PDF/JPG/PNG/HEIC (max 10MB each).
       </p>
 
       {error && (

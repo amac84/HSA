@@ -32,6 +32,8 @@ export async function GET(
       headers: {
         "Content-Type": document.fileType,
         "Content-Disposition": `inline; filename="${document.fileName.replace(/"/g, "")}"`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (error) {
@@ -39,7 +41,11 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
 
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return NextResponse.json({ error: "Stored document missing." }, { status: 404 });
+    }
+
     console.error(error);
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.json({ error: "Unable to fetch document." }, { status: 500 });
   }
 }
