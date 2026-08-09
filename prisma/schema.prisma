@@ -96,14 +96,16 @@ model Claim {
 }
 
 model ClaimDocument {
-  id             String            @id @default(cuid())
-  claimId        String
-  claim          Claim             @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  fileName       String
-  filePath       String
-  fileType       String
-  documentType   ClaimDocumentType
-  uploadedAt     DateTime          @default(now())
+  id              String            @id @default(cuid())
+  claimId         String
+  claim           Claim             @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fileName        String
+  filePath        String?
+  storageProvider String            @default("local")
+  storageKey      String?
+  fileType        String
+  documentType    ClaimDocumentType
+  uploadedAt      DateTime          @default(now())
 }
 
 model AuditLog {

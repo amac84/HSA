@@ -3,13 +3,24 @@ import { BenefitClass, Role } from "@prisma/client";
 
 import { ApiAuthorizationError, requireApiUser } from "@/lib/auth/authorization";
 import { logAuditEvent } from "@/lib/audit";
-import { getDefaultAllocation } from "@/lib/config";
+import { getDefaultAllocation, RATE_LIMITS } from "@/lib/config";
 import { prisma } from "@/lib/db";
+import { enforceRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { approvedUserSchema } from "@/lib/validation/admin";
 
 export async function POST(request: Request) {
   try {
     const admin = await requireApiUser({ admin: true });
+
+    const rateLimit = await enforceRateLimit({
+      key: `admin:${admin.id}`,
+      limit: RATE_LIMITS.admin.max,
+      windowMs: RATE_LIMITS.admin.windowMs,
+    });
+    if (!rateLimit.ok) {
+      return rateLimitResponse(rateLimit);
+    }
+
     const formData = await request.formData();
 
     const parsed = approvedUserSchema.safeParse({

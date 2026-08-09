@@ -1,21 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockRequireApiUser, mockCreateClaimForUser, MockApiAuthorizationError } = vi.hoisted(() => {
-  class HoistedApiAuthorizationError extends Error {
-    status: number;
+const { mockRequireApiUser, mockCreateClaimForUser, mockEnforceRateLimit, MockApiAuthorizationError } =
+  vi.hoisted(() => {
+    class HoistedApiAuthorizationError extends Error {
+      status: number;
 
-    constructor(status: number, message: string) {
-      super(message);
-      this.status = status;
+      constructor(status: number, message: string) {
+        super(message);
+        this.status = status;
+      }
     }
-  }
 
-  return {
-    mockRequireApiUser: vi.fn(),
-    mockCreateClaimForUser: vi.fn(),
-    MockApiAuthorizationError: HoistedApiAuthorizationError,
-  };
-});
+    return {
+      mockRequireApiUser: vi.fn(),
+      mockCreateClaimForUser: vi.fn(),
+      mockEnforceRateLimit: vi.fn(),
+      MockApiAuthorizationError: HoistedApiAuthorizationError,
+    };
+  });
 
 vi.mock("@/lib/auth/authorization", () => ({
   requireApiUser: mockRequireApiUser,
@@ -26,13 +28,23 @@ vi.mock("@/lib/claims", () => ({
   createClaimForUser: mockCreateClaimForUser,
 }));
 
+vi.mock("@/lib/rate-limit", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/rate-limit")>("@/lib/rate-limit");
+  return {
+    ...actual,
+    enforceRateLimit: mockEnforceRateLimit,
+  };
+});
+
 import { POST } from "@/app/api/claims/route";
 
 describe("POST /api/claims", () => {
   beforeEach(() => {
     mockRequireApiUser.mockReset();
     mockCreateClaimForUser.mockReset();
+    mockEnforceRateLimit.mockReset();
     mockRequireApiUser.mockResolvedValue({ id: "user_1" });
+    mockEnforceRateLimit.mockResolvedValue({ ok: true, limit: 10, remaining: 9, resetMs: 1000 });
   });
 
   it("rejects submissions with no documents", async () => {
@@ -107,6 +119,24 @@ describe("POST /api/claims", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toContain("/claims/new?error=Unsupported%20file%20type");
+    expect(mockCreateClaimForUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when the rate limit is exceeded", async () => {
+    mockEnforceRateLimit.mockResolvedValue({ ok: false, limit: 10, remaining: 0, resetMs: 2000 });
+
+    const form = new FormData();
+    form.set("expenseDate", "2026-03-06");
+    form.set("providerName", "Clinic E");
+    form.set("category", "DENTAL");
+    form.set("description", "Cleaning");
+    form.set("amount", "100");
+    form.set("documents", new File(["receipt"], "receipt.pdf", { type: "application/pdf" }));
+
+    const response = await POST(new Request("http://localhost/api/claims", { method: "POST", body: form }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBeTruthy();
     expect(mockCreateClaimForUser).not.toHaveBeenCalled();
   });
 });

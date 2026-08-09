@@ -53,7 +53,8 @@ export async function createClaimForUser(user: User, input: NewClaimInput) {
     documents.push({
       claimId: claim.id,
       fileName: stored.fileName,
-      filePath: stored.filePath,
+      storageProvider: stored.storageProvider,
+      storageKey: stored.storageKey,
       fileType: stored.fileType,
       documentType: index === 0 ? ClaimDocumentType.RECEIPT : ClaimDocumentType.SUPPORTING_DOCUMENT,
     });

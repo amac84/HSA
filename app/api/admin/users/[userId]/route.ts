@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { ApiAuthorizationError, requireApiUser } from "@/lib/auth/authorization";
 import { logAuditEvent } from "@/lib/audit";
+import { RATE_LIMITS } from "@/lib/config";
 import { prisma } from "@/lib/db";
+import { enforceRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { updateUserSchema } from "@/lib/validation/admin";
 
 export async function POST(
@@ -13,6 +15,16 @@ export async function POST(
 ) {
   try {
     const admin = await requireApiUser({ admin: true });
+
+    const rateLimit = await enforceRateLimit({
+      key: `admin:${admin.id}`,
+      limit: RATE_LIMITS.admin.max,
+      windowMs: RATE_LIMITS.admin.windowMs,
+    });
+    if (!rateLimit.ok) {
+      return rateLimitResponse(rateLimit);
+    }
+
     const { userId } = await context.params;
     const formData = await request.formData();
 

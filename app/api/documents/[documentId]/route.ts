@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { ApiAuthorizationError, canAccessClaim, requireApiUser } from "@/lib/auth/authorization";
+import { S3_CONFIG } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { readStoredDocument } from "@/lib/documents";
+import { resolveClaimDocument } from "@/lib/documents";
 
 export async function GET(
   request: Request,
@@ -26,9 +27,13 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
-    const { buffer } = await readStoredDocument(document.filePath);
+    const resolved = await resolveClaimDocument(document, S3_CONFIG.signedUrlTtlSeconds);
 
-    return new NextResponse(buffer, {
+    if (resolved.kind === "redirect") {
+      return NextResponse.redirect(resolved.url);
+    }
+
+    return new NextResponse(new Uint8Array(resolved.buffer), {
       headers: {
         "Content-Type": document.fileType,
         "Content-Disposition": `inline; filename="${document.fileName.replace(/"/g, "")}"`,

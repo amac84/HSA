@@ -7,7 +7,9 @@ import {
   ALLOWED_DOCUMENT_MIME_TYPES,
   MAX_CLAIM_DOCUMENTS,
   MAX_DOCUMENT_SIZE_BYTES,
+  RATE_LIMITS,
 } from "@/lib/config";
+import { enforceRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { claimFormSchema } from "@/lib/validation/claim";
 
 function getExtension(fileName: string) {
@@ -18,6 +20,16 @@ function getExtension(fileName: string) {
 export async function POST(request: Request) {
   try {
     const user = await requireApiUser();
+
+    const rateLimit = await enforceRateLimit({
+      key: `claims:${user.id}`,
+      limit: RATE_LIMITS.claims.max,
+      windowMs: RATE_LIMITS.claims.windowMs,
+    });
+    if (!rateLimit.ok) {
+      return rateLimitResponse(rateLimit);
+    }
+
     const formData = await request.formData();
 
     const files = formData
